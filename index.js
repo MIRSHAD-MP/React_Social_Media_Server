@@ -35,7 +35,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 //ROUTES
-app.use('/', authRoutes)
+app.use('/api/', authRoutes)
 
 //MONGOOSE SETUP
 const PORT = process.env.PORT || 5000;

@@ -1,3 +1,4 @@
+// REQUIRING MODULES
 import nodemailer from "nodemailer";
 
 let transporter = nodemailer.createTransport({
@@ -7,9 +8,10 @@ let transporter = nodemailer.createTransport({
   service: "Gmail",
 
   auth: {
-    user: "yoho.stream.chat@gmail.com",
-    pass: "atbspqhxbghaierp",
+    user: process.env.EMAIL,
+    pass: process.env.PASSWORD,
   },
 });
 
+// EXPORT THE MODULE
 export default transporter
