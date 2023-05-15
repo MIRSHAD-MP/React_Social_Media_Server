@@ -7,6 +7,7 @@ import dotenv from "dotenv";
 import multer from "multer";
 
 import authRoutes from "./routes/auth.js"
+import settingsRoutes from "./routes/settings.js"
 
 //CONFIGURATION
 dotenv.config();
@@ -36,6 +37,7 @@ const upload = multer({ storage });
 
 //ROUTES
 app.use('/api/', authRoutes)
+app.use('/api/settings', settingsRoutes)
 
 //MONGOOSE SETUP
 const PORT = process.env.PORT || 5000;

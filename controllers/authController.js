@@ -4,7 +4,8 @@ import asyncHandler from "express-async-handler";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import Otp from "../models/Otp.js";
-import transporter from "../util/email-otp.js";
+import transporter from "../util/emailOtp.js";
+import emailTemplate from "../../server/view/email-otp.js";
 
 // SIGNUP USER
 export const signupUser = asyncHandler(async (req, res) => {
@@ -63,14 +64,16 @@ export const loginUser = asyncHandler(async (req, res) => {
         },
       },
       process.env.JWT_SECRET,
-      { expiresIn: "15m" }
+      { expiresIn: "1h" }
     );
-    res
-      .status(200)
-      .json({ status: "success", message: "Successfully logged in" });
+    res.status(200).json({
+      status: "success",
+      message: "Successfully logged in",
+      token: accessToken,
+    });
   } else {
     res
-      .status(401)
+      .status(400)
       .json({ status: "error", message: "Email or Password is not valid" });
     throw new Error("Email or Password is not valid");
   }
@@ -95,7 +98,7 @@ export const forgotPassword = asyncHandler(async (req, res) => {
 });
 
 // SEND OTP
-export const sendOtp = asyncHandler(async (req, res) => {
+export const sendEmailOtp = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const user = await User.findOne({ _id: id });
   const newOtp = `${Math.floor(1000 + Math.random() * 9000)}`;
@@ -106,25 +109,29 @@ export const sendOtp = asyncHandler(async (req, res) => {
   });
 
   const mailOption = {
+    from: "reactsocialmedia50@gmail.com",
     to: user.email,
-    title: "OTP for forgot password",
-    html: newOtp,
+    subject: "FORGOT PASSWORD",
+    html: emailTemplate(newOtp),
   };
 
-  transporter.sendMail(mailOption, (err, info) => {
-    if (err) {
-      res.status(400).json({ status: "error", message: "Some error happened" });
-      throw new Error("User data us not valid");
-    } else {
-      res
-        .status(200)
-        .json({
+  try {
+    transporter.sendMail(mailOption, (err, info) => {
+      if (err) {
+        res
+          .status(400)
+          .json({ status: "error", message: "Some error happened" });
+        throw new Error("User data us not valid");
+      } else {
+        res.status(200).json({
           status: "success",
           message: "Verification Email sent successfully",
         });
-      console.log("Verification Email sent successfully");
-    }
-  });
+      }
+    });
+  } catch (error) {
+    throw new Error("Verification email failed to send");
+  }
 });
 
 // CHECK OTP
@@ -135,13 +142,13 @@ export const checkOtp = asyncHandler(async (req, res) => {
     throw new Error("Enter your OTP");
   }
 
-  const user = await Otp.findOne({ userId: userId });
+  const user = await Otp.findOne({ userId: userId }).sort({ createdAt: -1 });
   if (!user) {
     res.status(400).json({ status: "error", message: "Invalid OTP" });
     throw new Error("OTP is not valid");
   }
   if (user.otp == otp) {
-    res.status(200).json({ status: "success", messge: "Invalid OTP", userId});
+    res.status(200).json({ status: "success", messge: "Valid OTP", userId });
   } else {
     res.status(400).json({ status: "error", message: "Invalid OTP" });
     throw new Error("OTP is not valid");
@@ -150,12 +157,11 @@ export const checkOtp = asyncHandler(async (req, res) => {
 
 // NEW PASSWORD
 export const newPassword = asyncHandler(async (req, res) => {
-  console.log(req.body);
-  console.log(req.params);
-
   const { password } = req.body;
   const { id } = req.params;
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newpassword = await User.findByIdAndUpdate(id, {password: hashedPassword});
-    res.status(200).json({ status: "success", message: "New Password" });
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const newpassword = await User.findByIdAndUpdate(id, {
+    password: hashedPassword,
+  });
+  res.status(200).json({ status: "success", message: "New Password" });
 });
